@@ -1,0 +1,33 @@
+# Environments and secrets
+.env
+venv/
+.venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Django media and static
+/media/
+/static/
+/staticfiles/
+
+# SQLite database (if any)
+*.sqlite3
+
+# Docker and logs
+.docker/
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+db.db
+
+# Temporary files
+r.txt
