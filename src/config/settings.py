@@ -3,6 +3,7 @@ import drf_spectacular
 import environ
 from pathlib import Path
 from datetime import timedelta
+from boto3.s3.transfer import TransferConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'Accounts',
     'drf_spectacular',
+    'podcasts',
 ]
 
 MIDDLEWARE = [
@@ -122,7 +124,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -134,31 +135,49 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
 
-# AWS / MinIO S3 Storage Configuration
-AWS_ACCESS_KEY_ID = env('MINIO_ACCESS_KEY', default='')
-AWS_SECRET_ACCESS_KEY = env('MINIO_SECRET_KEY', default='')
-AWS_STORAGE_BUCKET_NAME = env('MINIO_BUCKET_NAME', default='podstream-media')
-AWS_S3_ENDPOINT_URL = env('MINIO_ENDPOINT', default='http://localhost:9000')
-AWS_S3_REGION_NAME = env('MINIO_REGION', default='us-east-1')
-AWS_S3_USE_SSL = env.bool('MINIO_USE_SSL', default=False)
-AWS_QUERYSTRING_AUTH = False  # Keep links public and permanent
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='us-east-1')
+
+if env.bool('DOCKER_ENV', default=False):
+    # Inside Docker, Django connects internally to the minio container
+    AWS_S3_ENDPOINT_URL = 'http://minio:9000'
+else:
+    # Outside Docker (local machine running python directly)
+    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', default='http://127.0.0.1:9000')
+
+# S3 Custom Domain: Forces generated URLs to point to localhost so the browser can load them
+AWS_S3_CUSTOM_DOMAIN = f'localhost:9000/{AWS_STORAGE_BUCKET_NAME}'
+AWS_S3_STYLE_URL_PATH = True 
+AWS_S3_SIGNATURE_VERSION = 's3'
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_URL_PROTOCOL = 'http:'  # Force http:// protocol instead of https:// for local development
 AWS_S3_FILE_OVERWRITE = False
 
-# Django 4.2+ Storage settings
+STATIC_URL = f'http://{AWS_S3_CUSTOM_DOMAIN}/static/'
+MEDIA_URL = f'http://{AWS_S3_CUSTOM_DOMAIN}/media/'
+
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "Accounts.storages.MediaStorage",
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "Accounts.storages.StaticStorage",
     },
 }
+
+
+AWS_S3_TRANSFER_CONFIG = TransferConfig(
+    multipart_threshold=1024 * 25,   
+    multipart_chunksize=1024 * 25,
+    use_threads=True,
+)
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),

@@ -1,10 +1,8 @@
-from django.shortcuts import render
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User
 from .serializers import UserSerializer , UserCreateSerializer , ChangePasswordSerializer
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny , IsAuthenticated , IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
