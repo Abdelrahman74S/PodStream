@@ -1,7 +1,7 @@
 from django.db import models
 from Accounts.storages import MediaStorage
 from django.contrib.auth import get_user_model
-
+from django.utils import timezone
 User = get_user_model()
 
 class Category(models.Model):
@@ -36,12 +36,12 @@ class Episode(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     audio_file = models.FileField(upload_to='podcast_episodes/', storage=MediaStorage())
-    duration = models.IntegerField(help_text= "Duration of the episode in seconds")
-    file_size = models.BigIntegerField(help_text= "Size of the audio file in bytes")
+    duration = models.PositiveIntegerField(help_text= "Duration of the episode in seconds")
+    file_size = models.PositiveBigIntegerField(help_text= "Size of the audio file in bytes")
     transcript = models.TextField(null=True, blank=True)
-    episode_number = models.IntegerField()
+    episode_number = models.PositiveIntegerField()
     is_explicit = models.BooleanField(default=False)
-    publish_date = models.DateTimeField()
+    publish_date = models.DateTimeField(default=timezone.now)
     listen_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'Accounts',
     'drf_spectacular',
     'podcasts',
+    'interactions',
 ]
 
 MIDDLEWARE = [
