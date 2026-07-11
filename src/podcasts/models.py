@@ -1,6 +1,8 @@
 from django.db import models
-from Accounts.models import User
 from Accounts.storages import MediaStorage
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Category(models.Model):
     name = models.CharField(max_length=100)

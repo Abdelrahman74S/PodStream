@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from Accounts.permission import ISListener, IsPodcasterOrAdmin
 
-user = get_user_model()
+User = get_user_model()
 
 
 # Category Views

@@ -23,11 +23,27 @@ class PodcastSerializer(serializers.ModelSerializer):
         queryset=Tags.objects.all(), source='tags', many=True, write_only=True, required=False
     )
     id = serializers.CharField(read_only=True)
-
+    
     class Meta:
         model = Podcast
         fields = ['id', 'title', 'description', 'category', 'category_id', 'creator',
                 'tags', 'tags_ids', 'cover_image', 'is_published', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        for key, value in representation.items():
+            if type(value).__name__ == 'ObjectId':
+                representation[key] = str(value)
+            
+            elif isinstance(value, list):
+                representation[key] = [
+                    str(item) if type(item).__name__ == 'ObjectId' else item 
+                    for item in value
+                ]
+                
+        return representation
+
 
 class EpisodeSerializer(serializers.ModelSerializer):
     podcast = PodcastSerializer(read_only=True)
