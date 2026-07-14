@@ -1,6 +1,7 @@
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import post_delete, pre_save ,post_save
 from django.dispatch import receiver
 from .models import Podcast, Episode
+from common.services.audio_processing import run_audio_processing_in_background
 
 
 @receiver(post_delete, sender=Podcast)
@@ -12,7 +13,6 @@ def delete_podcast_cover_image(sender, instance, **kwargs):
 def delete_episode_file(sender, instance, **kwargs):
     if instance.audio_file:
         instance.audio_file.delete(save=False)
-
 
 @receiver(pre_save, sender=Podcast)
 def auto_delete_old_cover_on_change(sender, instance, **kwargs):
@@ -39,3 +39,9 @@ def auto_delete_old_audio_on_change(sender, instance, **kwargs):
     new_audio = instance.audio_file
     if old_audio and old_audio != new_audio:
         old_audio.delete(save=False)
+
+
+@receiver(post_save, sender=Episode)
+def trigger_audio_processing(sender, instance, created, **kwargs):
+    if created and instance.audio_file:
+        run_audio_processing_in_background(instance.id)

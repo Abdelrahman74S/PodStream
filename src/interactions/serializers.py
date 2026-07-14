@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Subscription, Playlist, Comment
+from .models import Subscription, Playlist, Comment, Reply
 from podcasts.models import Podcast, Episode
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -60,16 +60,23 @@ class PlaylistSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class ReplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reply
+        fields = ['username', 'text', 'created_at', 'updated_at']
+
+
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     episode_id = serializers.PrimaryKeyRelatedField(
         queryset=Episode.objects.all(), source='episode', write_only=True
     )
     id = serializers.CharField(read_only=True)
+    replies = ReplySerializer(many=True, read_only=True)
 
     class Meta:
         model = Comment
-        fields = ['id', 'episode_id', 'user', 'text', 'replies', 'created_at' , 'update_at']
+        fields = ['id', 'episode_id', 'user', 'text', 'replies', 'created_at', 'updated_at']
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user

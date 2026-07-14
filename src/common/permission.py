@@ -1,4 +1,4 @@
-from .models import User
+from Accounts.models import User
 from rest_framework import permissions
 
 

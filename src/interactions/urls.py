@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     SubscriptionListCreateView, SubscriptionDestroyView,
     PlaylistListCreateView, PlaylistRetrieveUpdateDestroyView,
-    CommentListCreateView, CommentDestroyView
+    CommentListCreateView, CommentDestroyView, CommentReplyView
 )
 
 urlpatterns = [
@@ -17,4 +17,5 @@ urlpatterns = [
     # Comments
     path('comments/', CommentListCreateView.as_view(), name='comment-list-create'),
     path('comments/<str:id>/', CommentDestroyView.as_view(), name='comment-destroy'),
+    path('comments/<str:id>/reply/', CommentReplyView.as_view(), name='comment-reply'),
 ]

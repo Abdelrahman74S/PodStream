@@ -12,6 +12,7 @@ class EpisodeAdmin(admin.ModelAdmin):
     list_display = ('title', 'podcast', 'episode_number', 'publish_date', 'listen_count')
     list_filter = ('publish_date', 'is_explicit')
     search_fields = ('title', 'description', 'podcast__title')
+    readonly_fields = ('duration', 'file_size', 'transcript', 'listen_count')
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.generics import RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
-from Accounts.permission import ISListener, IsPodcasterOrAdmin
+from common.permission import ISListener, IsPodcasterOrAdmin
 
 User = get_user_model()
 

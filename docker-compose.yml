@@ -35,10 +35,18 @@ services:
       exit 0;
       "
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     container_name: podstream_web
     command: python src/manage.py runserver 0.0.0.0:8000
+    dns:
+      - 8.8.8.8
     volumes:
       - .:/src
     ports:
@@ -48,10 +56,29 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DOCKER_ENV=True
     depends_on:
       - mongodb
       - minio
+      - redis
+
+  celery:
+    build: .
+    command: celery -A config worker -B --loglevel=info
+    volumes:
+      - .:/src
+    environment:
+      - PYTHONPATH=src
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DOCKER_ENV=True
+    depends_on:
+      - redis
+      - web
 
 volumes:
   mongodb_data:

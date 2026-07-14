@@ -250,6 +250,12 @@ class EpisodeSerializerTestCase(TestCase):
 # ==========================================
 class EpisodeViewsTestCase(APITestCase):
     def setUp(self):
+        # Clear database to prevent leakage across tests (MongoDB transaction limitations)
+        Episode.objects.all().delete()
+        Podcast.objects.all().delete()
+        User.objects.all().delete()
+        Category.objects.all().delete()
+
         # 1. Create a podcaster user
         self.podcaster = User.objects.create_user(
             username='podcaster_user',
@@ -380,3 +386,83 @@ class EpisodeViewsTestCase(APITestCase):
         self.client.force_authenticate(user=other_podcaster_del)
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+from unittest.mock import patch, MagicMock
+
+class AudioProcessingTestCase(TestCase):
+    def setUp(self):
+        # Clear database to prevent leakage across tests
+        Episode.objects.all().delete()
+        Podcast.objects.all().delete()
+        User.objects.all().delete()
+        Category.objects.all().delete()
+
+        self.podcaster = User.objects.create_user(
+            username='podcaster_test',
+            email='podcaster_test@example.com',
+            password='pass123',
+            role=User.Role.PODCASTER
+        )
+        self.category = Category.objects.create(name='Test Category')
+        self.podcast = Podcast.objects.create(
+            title="Audio Test Podcast",
+            description="Testing audio signals",
+            creator=self.podcaster,
+            category=self.category
+        )
+
+    @patch('common.services.audio_processing.genai')
+    def test_audio_processing_service(self, mock_genai):
+        # Mock genai.Client and its methods
+        mock_client = MagicMock()
+        mock_genai.Client.return_value = mock_client
+
+        mock_file = MagicMock()
+        mock_file.name = "mocked_gemini_file"
+        mock_client.files.upload.return_value = mock_file
+
+        mock_response = MagicMock()
+        mock_response.text = "This is a mocked transcription from Gemini."
+        mock_client.models.generate_content.return_value = mock_response
+
+        # Create a mock file
+        audio_file = SimpleUploadedFile("test_episode.mp3", b"dummy mp3 content", content_type="audio/mpeg")
+        
+        from common.services.audio_processing import process_episode_audio
+        result = process_episode_audio(audio_file)
+
+        self.assertEqual(result["size_bytes"], len(b"dummy mp3 content"))
+        self.assertEqual(result["transcript"], "This is a mocked transcription from Gemini.")
+
+    @patch('common.services.audio_processing.genai')
+    @patch('common.services.audio_processing.process_episode_audio')
+    def test_audio_processing_signal(self, mock_process, mock_genai):
+        mock_process.return_value = {
+            "size_bytes": 12345,
+            "duration_seconds": 120.0,
+            "transcript": "Hello world from signal test."
+        }
+
+        audio_file = SimpleUploadedFile("test_episode_signal.mp3", b"dummy audio content", content_type="audio/mpeg")
+        
+        from common.services.audio_processing import process_audio_task
+        
+        episode = Episode.objects.create(
+            title="Signal Test Episode",
+            description="Testing signal triggers",
+            podcast=self.podcast,
+            audio_file=audio_file,
+            duration=0,
+            file_size=0,
+            episode_number=1,
+            publish_date=timezone.now()
+        )
+
+        process_audio_task(episode.id)
+
+        # Refresh from database
+        episode.refresh_from_db()
+        self.assertEqual(episode.file_size, 12345)
+        self.assertEqual(episode.duration, 120)
+        self.assertEqual(episode.transcript, "Hello world from signal test.")
