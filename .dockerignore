@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Python cache files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Local environment variables
+.env
+
+# Local database and media files
+db.sqlite3
+media/
+static/
+staticfiles/
+
+# IDE configurations
+.idea/
+.vscode/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+celerybeat-schedule

@@ -18,7 +18,16 @@ from .serializers import (
 )
 from django.contrib.auth import get_user_model
 
+from common.services.views_count import increment_listen_count
+
+
+
+
+
 User = get_user_model()
+
+
+
 
 # ==========================================
 # 1. MODEL TESTS
@@ -465,4 +474,71 @@ class AudioProcessingTestCase(TestCase):
         episode.refresh_from_db()
         self.assertEqual(episode.file_size, 12345)
         self.assertEqual(episode.duration, 120)
-        self.assertEqual(episode.transcript, "Hello world from signal test.")
+        self.assertEqual(episode.transcript, "Hello world from signal test.")
+        
+        
+class TestviewsCounts(TestCase):
+    def setUp(self):
+        # Clear database to prevent leakage across tests (MongoDB transaction limitations)
+        Episode.objects.all().delete()
+        Podcast.objects.all().delete()
+        User.objects.all().delete()
+        Category.objects.all().delete()
+
+        # 1. Create a podcaster user
+        self.podcaster = User.objects.create_user(
+            username='podcaster_user',
+            email='podcaster_user@example.com',
+            password='pass123',
+            role=User.Role.PODCASTER
+        )
+        # 2. Create a listener user
+        self.listener = User.objects.create_user(
+            username='listener_user',
+            email='listener_user@example.com',
+            password='pass123',
+            role=User.Role.LISTENER
+        )
+        # 3. Create a category
+        self.category = Category.objects.create(name='Technology')
+        # 4. Create a podcast
+        self.podcast = Podcast.objects.create(
+            title="View Podcast",
+            description="Testing views",
+            creator=self.podcaster,
+            category=self.category
+        )
+        # 5. Create an episode
+        self.episode = Episode.objects.create(
+            title="View Episode",
+            description="Testing episode views",
+            podcast=self.podcast,
+            audio_file=SimpleUploadedFile("test_audio.mp3", b"dummy_audio_content", content_type="audio/mpeg"),            
+            episode_number=1,
+            publish_date=timezone.now()
+        )
+
+        self.detail_url = reverse('episode-detail', kwargs={'id': str(self.episode.pk)})
+    
+    def test_increment_listen_count_on_first_visit(self):
+        
+        self.assertEqual(self.episode.listen_count, 0)
+
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data['listen_count'], 1)
+
+        self.episode.refresh_from_db()
+        self.assertEqual(self.episode.listen_count, 1)
+
+    def test_no_duplicate_increment_in_same_session(self):
+        
+        response1 = self.client.get(self.detail_url)
+        self.assertEqual(response1.data['listen_count'], 1)
+
+        response2 = self.client.get(self.detail_url)
+        self.assertEqual(response2.data['listen_count'], 1)
+
+        self.episode.refresh_from_db()
+        self.assertEqual(self.episode.listen_count, 1)

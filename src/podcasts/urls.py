@@ -3,7 +3,8 @@ from .views import (
     CategoryListCreateView, CategoryRetrieveUpdateDestroyView,
     TagsListCreateView, TagsRetrieveUpdateDestroyView,
     PodcastListCreateView, PodcastRetrieveUpdateDestroyView,
-    EpisodeListCreateView, EpisodeRetrieveUpdateDestroyView
+    EpisodeListCreateView, EpisodeRetrieveUpdateDestroyView,
+    PodcastSemanticSearch, EpisodeSemanticSearch
 )
 
 urlpatterns = [
@@ -18,8 +19,10 @@ urlpatterns = [
     # Podcast endpoints
     path('podcasts/', PodcastListCreateView.as_view(), name='podcast-list-create'),
     path('podcasts/<str:id>/', PodcastRetrieveUpdateDestroyView.as_view(), name='podcast-detail'),
-    
+    path('podcasts/search/', PodcastSemanticSearch.as_view(), name='podcast-semantic-search'),
+
     # Episode endpoints
     path('episodes/', EpisodeListCreateView.as_view(), name='episode-list-create'),
     path('episodes/<str:id>/', EpisodeRetrieveUpdateDestroyView.as_view(), name='episode-detail'),
+    path('episodes/search/', EpisodeSemanticSearch.as_view(), name='episode-semantic-search')
 ]
