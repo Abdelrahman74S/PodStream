@@ -61,6 +61,9 @@ class LogoutView(APIView):
 class ListUserProfileView(ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['role', 'is_staff', 'is_active']
+    ordering_fields = ['date_joined', 'username']
+    ordering = ['username']
     
     def get_queryset(self):
         user = self.request.user

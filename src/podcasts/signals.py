@@ -1,4 +1,4 @@
-from django.db.models.signals import post_delete, pre_save ,post_save
+from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from .models import Podcast, Episode
 from common.services.audio_processing import run_audio_processing_in_background
@@ -56,37 +56,41 @@ def trigger_audio_processing(sender, instance, created, **kwargs):
         run_audio_processing_in_background(instance.id)
 
 
-
+# ==================== (chroma_service) ====================
 @receiver(post_save, sender=Episode)
-def sync_article_to_chroma(sender, instance, created, **kwargs):
+def sync_episode_to_chroma(sender, instance, created, **kwargs):
     if instance.transcript:
-        chroma_service.episodes_collection.upsert(
-            documents=[instance.transcript],
-            metadatas=[{
-                "title": instance.title, 
-                "django_id": str(instance.id),
-                "podcast_id": str(instance.podcast.id)
-            }],
-            ids=[f"episode_{instance.id}"]
-        )
+        try:
+            chroma_service.sync_episode_transcript(instance)
+        except Exception as e:
+            print(f"ChromaDB Sync Error (Episode): {e}")
 
 @receiver(post_delete, sender=Episode)
-def delete_article_from_chroma(sender, instance, **kwargs):
-    chroma_service.episodes_collection.delete(ids=[f"episode_{instance.id}"])
+def delete_episode_from_chroma(sender, instance, **kwargs):
+    try:
+        chroma_service.delete_episode_transcript(instance.id)
+    except Exception as e:
+        print(f"ChromaDB Delete Error (Episode): {e}")
 
 
 @receiver(post_save, sender=Podcast)
 def sync_podcast_to_chroma(sender, instance, created, **kwargs):
     document_text = f"{instance.title} - {instance.description}"
-    chroma_service.podcasts_collection.upsert(
-        documents=[document_text],
-        metadatas=[{
-            "title": instance.title,
-            "django_id": str(instance.id)
-        }],
-        ids=[f"podcast_{instance.id}"]
-    )
+    try:
+        chroma_service.podcasts_collection.upsert(
+            documents=[document_text],
+            metadatas=[{
+                "title": instance.title,
+                "django_id": str(instance.id)
+            }],
+            ids=[f"podcast_{instance.id}"]
+        )
+    except Exception as e:
+        print(f"ChromaDB Sync Error (Podcast): {e}")
 
 @receiver(post_delete, sender=Podcast)
 def delete_podcast_from_chroma(sender, instance, **kwargs):
-    chroma_service.podcasts_collection.delete(ids=[f"podcast_{instance.id}"])
+    try:
+        chroma_service.podcasts_collection.delete(ids=[f"podcast_{instance.id}"])
+    except Exception as e:
+        print(f"ChromaDB Delete Error (Podcast): {e}")

@@ -1,6 +1,7 @@
 import chromadb
 from chromadb.utils import embedding_functions
 from django.conf import settings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class ChromaService:
     _instance = None
@@ -13,6 +14,7 @@ class ChromaService:
             cls._instance._collection = None
             cls._instance._episodes_collection = None
             cls._instance._podcasts_collection = None
+            cls._instance._text_splitter = None
         return cls._instance
 
     @property
@@ -34,10 +36,19 @@ class ChromaService:
         return self._openai_ef
 
     @property
+    def text_splitter(self):
+        if self._text_splitter is None:
+            self._text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200,
+            )
+        return self._text_splitter
+
+    @property
     def collection(self):
         if self._collection is None:
             self._collection = self.client.get_or_create_collection(
-                name="django_articles",
+                name="django_collection",
                 embedding_function=self.openai_ef
             )
         return self._collection
@@ -59,5 +70,42 @@ class ChromaService:
                 embedding_function=self.openai_ef
             )
         return self._podcasts_collection
+
+    def sync_episode_transcript(self, episode):
+        if not episode.transcript:
+            return
+        
+        chunks = self.text_splitter.split_text(episode.transcript)
+        if not chunks:
+            return
+
+        documents = chunks
+        metadatas = [
+            {
+                "title": episode.title, 
+                "django_id": str(episode.id),
+                "podcast_id": str(episode.podcast.id),
+                "chunk_index": i
+            }
+            for i in range(len(chunks))
+        ]
+        ids = [f"episode_{episode.id}_chunk_{i}" for i in range(len(chunks))]
+
+        try:
+            self.episodes_collection.delete(where={"django_id": str(episode.id)})
+        except Exception:
+            pass
+
+        self.episodes_collection.upsert(
+            documents=documents,
+            metadatas=metadatas,
+            ids=ids
+        )
+
+    def delete_episode_transcript(self, episode_id):
+        try:
+            self.episodes_collection.delete(where={"django_id": str(episode_id)})
+        except Exception:
+            self.episodes_collection.delete(ids=[f"episode_{episode_id}"])
 
 chroma_service = ChromaService()

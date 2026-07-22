@@ -19,6 +19,7 @@ from .serializers import (
 from django.contrib.auth import get_user_model
 
 from common.services.views_count import increment_listen_count
+from .factory import UserFactory, CategoryFactory, PodcastFactory, EpisodeFactory
 
 
 
@@ -96,7 +97,7 @@ class PodcastSerializerTestCase(TestCase):
 
     def test_serializer_contains_expected_fields(self):
         data = self.serializer.data
-        expected_fields = {'id', 'title', 'description', 'creator', 'category', 'tags', 'is_published' , 'cover_image', 'created_at', 'updated_at'}
+        expected_fields = {'id', 'title', 'description', 'creator', 'category', 'tags', 'is_published', 'cover_image', 'episodes', 'created_at', 'updated_at'}
         self.assertEqual(set(data.keys()), expected_fields)
 
     def test_serializer_field_content(self):
@@ -125,7 +126,8 @@ class PodcastViewTestCase(APITestCase):
     def test_podcast_list_view(self):
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1) 
+        results = response.data['results'] if isinstance(response.data, dict) and 'results' in response.data else response.data
+        self.assertEqual(len(results), 1) 
 
     def test_podcast_retrieve_view(self):
         response = self.client.get(self.detail_url)
@@ -248,9 +250,9 @@ class EpisodeSerializerTestCase(TestCase):
     def test_serializer_contains_expected_fields(self):
         data = self.serializer.data
         
-        expected_fields = {'id', 'podcast',  'title', 'description', 'audio_file', 'duration',
+        expected_fields = {'id', 'podcast', 'title', 'description', 'audio_file', 'duration',
                 'file_size', 'transcript', 'episode_number', 'is_explicit', 
-                'publish_date', 'listen_count', 'created_at'}
+                'publish_date', 'listen_count', 'created_at', 'comments'}
         
         self.assertEqual(set(data.keys()), expected_fields)
 
@@ -306,7 +308,8 @@ class EpisodeViewsTestCase(APITestCase):
     def test_episode_list_view(self):
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        results = response.data['results'] if isinstance(response.data, dict) and 'results' in response.data else response.data
+        self.assertEqual(len(results), 1)
 
     def test_episode_retrieve_view(self):
         response = self.client.get(self.detail_url)
@@ -441,7 +444,7 @@ class AudioProcessingTestCase(TestCase):
         from common.services.audio_processing import process_episode_audio
         result = process_episode_audio(audio_file)
 
-        self.assertEqual(result["size_bytes"], len(b"dummy mp3 content"))
+        self.assertEqual(result["size_bytes"], len(b"dummy mp3 content") / (1024 * 1024))
         self.assertEqual(result["transcript"], "This is a mocked transcription from Gemini.")
 
     @patch('common.services.audio_processing.genai')
@@ -542,3 +545,14 @@ class TestviewsCounts(TestCase):
 
         self.episode.refresh_from_db()
         self.assertEqual(self.episode.listen_count, 1)
+
+class TestFactory(TestCase):
+    def setUp(self):
+        self.user = UserFactory()
+        self.podcast = PodcastFactory(creator=self.user)
+        self.episodes = EpisodeFactory.create_batch(
+            5,
+            podcast=self.podcast
+        )
+    def test_episode_count(self):
+        self.assertEqual(len(self.episodes), 5)

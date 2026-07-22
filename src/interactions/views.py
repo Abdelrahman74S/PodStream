@@ -13,6 +13,9 @@ from django.shortcuts import get_object_or_404
 class SubscriptionListCreateView(ListCreateAPIView):
     serializer_class = SubscriptionSerializer
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['podcast']
+    ordering_fields = ['created_at']
+    ordering = ['-created_at']
 
     def get_queryset(self):
         return Subscription.objects.filter(user=self.request.user)
@@ -32,6 +35,9 @@ class SubscriptionDestroyView(DestroyAPIView):
 class PlaylistListCreateView(ListCreateAPIView):
     serializer_class = PlaylistSerializer
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['is_public', 'user']
+    ordering_fields = ['created_at', 'name']
+    ordering = ['-created_at']
 
     def get_queryset(self):
         return Playlist.objects.filter(
@@ -55,6 +61,9 @@ class PlaylistRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
 # --- Comment Views ---
 class CommentListCreateView(ListCreateAPIView):
     serializer_class = CommentSerializer
+    filterset_fields = ['episode', 'user']
+    ordering_fields = ['created_at']
+    ordering = ['-created_at']
 
     def get_permissions(self):
         if self.request.method == 'POST':

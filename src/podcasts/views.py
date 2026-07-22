@@ -20,6 +20,8 @@ User = get_user_model()
 class CategoryListCreateView(ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    ordering_fields = ['name', 'id']
+    ordering = ['name']
     
     def get_permissions(self):
         if self.request.method in ['POST']:
@@ -41,6 +43,8 @@ class CategoryRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
 class TagsListCreateView(ListCreateAPIView):
     queryset = Tags.objects.all()
     serializer_class = TagsSerializer
+    ordering_fields = ['name', 'id']
+    ordering = ['name']
     
     def get_permissions(self):
         if self.request.method in ['POST']:
@@ -62,6 +66,9 @@ class TagsRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
 class PodcastListCreateView(ListCreateAPIView):
     queryset = Podcast.objects.all()
     serializer_class = PodcastSerializer
+    filterset_fields = ['category', 'creator', 'is_published', 'tags']
+    ordering_fields = ['created_at', 'updated_at', 'title']
+    ordering = ['-created_at']
     
     def get_permissions(self):
         if self.request.method in ['POST']:
@@ -83,6 +90,9 @@ class PodcastRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
 class EpisodeListCreateView(ListCreateAPIView):
     queryset = Episode.objects.all()
     serializer_class = EpisodeSerializer
+    filterset_fields = ['podcast', 'is_explicit', 'publish_date']
+    ordering_fields = ['episode_number', 'publish_date', 'listen_count', 'duration', 'created_at']
+    ordering = ['episode_number']
     
     def get_permissions(self):
         if self.request.method in ['POST']:
