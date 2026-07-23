@@ -131,7 +131,8 @@ class PodcastSemanticSearch(mixins.ListModelMixin, GenericAPIView):
         )
     
         metadatas = raw_results.get('metadatas', [[]])[0] if raw_results.get('metadatas') else []
-        podcast_ids = [item['django_id'] for item in metadatas if 'django_id' in item]
+        podcast_ids = [item['django_id'] for item in metadatas if item and 'django_id' in item]
+        podcast_ids = list(dict.fromkeys(podcast_ids))
         
         if not podcast_ids:
             return Podcast.objects.none()
@@ -161,7 +162,8 @@ class EpisodeSemanticSearch(mixins.ListModelMixin, GenericAPIView):
         )
     
         metadatas = raw_results.get('metadatas', [[]])[0] if raw_results.get('metadatas') else []
-        episode_ids = [item['django_id'] for item in metadatas if 'django_id' in item]
+        episode_ids = [item['django_id'] for item in metadatas if item and 'django_id' in item]
+        episode_ids = list(dict.fromkeys(episode_ids))
         
         if not episode_ids:
             return Episode.objects.none()

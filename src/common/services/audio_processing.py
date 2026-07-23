@@ -122,6 +122,10 @@ def process_audio_task(episode_id):
     finally:
         connection.close()
 
+# def run_audio_processing_in_background(episode_id):
+#     thread = threading.Thread(target=process_audio_task, args=(episode_id,))
+#     thread.start()
+
 def run_audio_processing_in_background(episode_id):
-    thread = threading.Thread(target=process_audio_task, args=(episode_id,))
-    thread.start()
+    from podcasts.tasks import process_audio_in_celery
+    process_audio_in_celery.delay(episode_id)
